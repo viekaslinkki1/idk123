@@ -29,7 +29,7 @@
 <body>
 
 <h2>Chatroom</h2>
-<div id="messages"></div>
+<div id="messages" readonly></div>
 
 <input type="text" id="input" placeholder="Type your message here..." />
 <button id="sendBtn">Send</button>
@@ -39,8 +39,9 @@
   const input = document.getElementById('input');
   const sendBtn = document.getElementById('sendBtn');
 
-  // Connect to WebSocket endpoint
-  const ws = new WebSocket(`ws://${window.location.host}/ws/chat`);
+  // Use wss:// if page is https, else ws://
+  const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+  const ws = new WebSocket(`${protocol}://${window.location.host}/ws/chat`);
 
   ws.onmessage = (event) => {
     // Append received message to messages div
@@ -56,12 +57,24 @@
     }
   };
 
-  // Optional: send message when pressing Enter
+  // Send message on Enter key press
   input.addEventListener('keyup', (e) => {
     if (e.key === 'Enter') {
       sendBtn.click();
     }
   });
+
+  ws.onopen = () => {
+    console.log("WebSocket connection opened.");
+  };
+
+  ws.onerror = (error) => {
+    console.error("WebSocket error:", error);
+  };
+
+  ws.onclose = () => {
+    console.log("WebSocket connection closed.");
+  };
 </script>
 
 </body>
