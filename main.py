@@ -6,7 +6,7 @@ import os
 
 app = FastAPI()
 
-# Serve the frontend files
+# Serve static frontend files from 'frontend' folder
 app.mount("/static", StaticFiles(directory="frontend"), name="static")
 
 @app.get("/")
@@ -38,7 +38,6 @@ def save_message(message: str):
 async def websocket_endpoint(websocket: WebSocket):
     await manager.connect(websocket)
     try:
-        # Send saved messages to new client
         if os.path.exists("messages.txt"):
             with open("messages.txt", "r", encoding="utf-8") as file:
                 for line in file:
