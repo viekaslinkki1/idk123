@@ -1,0 +1,38 @@
+""
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FastAPI Chatroom</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="chat-container">
+        <div id="messages" class="chat-box"></div>
+        <input type="text" id="messageInput" placeholder="Type your message...">
+        <button onclick="sendMessage()">Send</button>
+    </div>
+
+    <script>
+        const socket = new WebSocket("ws://" + window.location.host + "/ws/chat");
+        const messages = document.getElementById("messages");
+
+        socket.onmessage = function(event) {
+            const message = document.createElement("div");
+            message.textContent = event.data;
+            messages.appendChild(message);
+            messages.scrollTop = messages.scrollHeight;
+        };
+
+        function sendMessage() {
+            const input = document.getElementById("messageInput");
+            if (input.value.trim() !== "") {
+                socket.send(input.value);
+                input.value = '';
+            }
+        }
+    </script>
+</body>
+</html>
+    ""
