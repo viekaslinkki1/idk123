@@ -5,26 +5,23 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>FastAPI Chatroom</title>
 <style>
-  body {
-    font-family: Arial, sans-serif;
-    max-width: 600px;
-    margin: 2em auto;
-  }
-  #messages {
-    width: 100%;
-    height: 300px;
-    border: 1px solid #ccc;
-    padding: 0.5em;
-    overflow-y: scroll;
+  body { font-family: Arial, sans-serif; max-width: 600px; margin: 2em auto; }
+  #messages { 
+    width: 100%; 
+    height: 300px; 
+    border: 1px solid #ccc; 
+    padding: 0.5em; 
+    overflow-y: scroll; 
+    white-space: pre-wrap;
     background-color: #f9f9f9;
   }
-  #input {
-    width: 80%;
-    padding: 0.5em;
-    font-size: 1em;
+  #input { 
+    width: 80%; 
+    padding: 0.5em; 
+    font-size: 1em; 
   }
   #sendBtn {
-    padding: 0.5em 1em;
+    padding: 0.5em 1em; 
     font-size: 1em;
   }
 </style>
@@ -46,11 +43,9 @@
   const ws = new WebSocket(`ws://${window.location.host}/ws/chat`);
 
   ws.onmessage = (event) => {
-    console.log('Message received:', event.data);
-    const newMessage = document.createElement('div');
-    newMessage.textContent = event.data;
-    messagesDiv.appendChild(newMessage);
-    messagesDiv.scrollTop = messagesDiv.scrollHeight; // auto scroll to bottom
+    // Append received message to messages div
+    messagesDiv.textContent += event.data + '\n';
+    messagesDiv.scrollTop = messagesDiv.scrollHeight; // scroll to bottom
   };
 
   sendBtn.onclick = () => {
@@ -61,7 +56,7 @@
     }
   };
 
-  // Send message on Enter key
+  // Optional: send message when pressing Enter
   input.addEventListener('keyup', (e) => {
     if (e.key === 'Enter') {
       sendBtn.click();

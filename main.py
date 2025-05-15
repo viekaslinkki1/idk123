@@ -6,14 +6,15 @@ import os
 
 app = FastAPI()
 
-# Serve frontend static files
+# Serve frontend static files (JS, CSS, etc.)
 app.mount("/static", StaticFiles(directory="frontend"), name="static")
 
+# Serve the main HTML page
 @app.get("/")
 def read_index():
     return FileResponse("frontend/index.html")
 
-# Connection manager to handle active WebSocket clients
+# Manage active websocket connections
 class ConnectionManager:
     def __init__(self):
         self.active_connections: list[WebSocket] = []
@@ -31,7 +32,7 @@ class ConnectionManager:
 
 manager = ConnectionManager()
 
-# Save messages to file
+# Save message to file
 def save_message(message: str):
     with open("messages.txt", "a", encoding="utf-8") as file:
         file.write(message + "\n")
@@ -40,19 +41,18 @@ def save_message(message: str):
 @app.websocket("/ws/chat")
 async def websocket_endpoint(websocket: WebSocket):
     await manager.connect(websocket)
-    try:
-        # Send previous messages on new connection
-        if os.path.exists("messages.txt"):
-            with open("messages.txt", "r", encoding="utf-8") as file:
-                for line in file:
-                    await websocket.send_text(line.strip())
 
-        # Receive and broadcast new messages
+    # On new connection, send all saved messages to the client
+    if os.path.exists("messages.txt"):
+        with open("messages.txt", "r", encoding="utf-8") as file:
+            for line in file:
+                await websocket.send_text(line.strip())
+
+    try:
         while True:
             data = await websocket.receive_text()
             save_message(data)
             await manager.send_message(data)
-
     except WebSocketDisconnect:
         manager.disconnect(websocket)
 
