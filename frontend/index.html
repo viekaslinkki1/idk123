@@ -39,14 +39,13 @@
   const input = document.getElementById('input');
   const sendBtn = document.getElementById('sendBtn');
 
-  // Use wss:// if page is https, else ws://
-  const protocol = window.location.protocol === "https:" ? "wss" : "ws";
-  const ws = new WebSocket(`${protocol}://${window.location.host}/ws/chat`);
+  // Choose protocol based on page protocol (http -> ws, https -> wss)
+  const wsProtocol = window.location.protocol === "https:" ? "wss" : "ws";
+  const ws = new WebSocket(`${wsProtocol}://${window.location.host}/ws/chat`);
 
   ws.onmessage = (event) => {
-    // Append received message to messages div
     messagesDiv.textContent += event.data + '\n';
-    messagesDiv.scrollTop = messagesDiv.scrollHeight; // scroll to bottom
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
   };
 
   sendBtn.onclick = () => {
@@ -57,24 +56,11 @@
     }
   };
 
-  // Send message on Enter key press
   input.addEventListener('keyup', (e) => {
     if (e.key === 'Enter') {
       sendBtn.click();
     }
   });
-
-  ws.onopen = () => {
-    console.log("WebSocket connection opened.");
-  };
-
-  ws.onerror = (error) => {
-    console.error("WebSocket error:", error);
-  };
-
-  ws.onclose = () => {
-    console.log("WebSocket connection closed.");
-  };
 </script>
 
 </body>
