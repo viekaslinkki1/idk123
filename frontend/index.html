@@ -68,11 +68,74 @@
     button:hover {
       background-color: #0056b3;
     }
+
+    /* Dropdown Menu */
+    .dropdown {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      user-select: none;
+    }
+    .dropdown > button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      padding: 10px 14px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 14px;
+      transition: background-color 0.3s;
+    }
+    .dropdown > button:hover {
+      background-color: #0056b3;
+    }
+    .dropdown-content {
+      display: none;
+      position: absolute;
+      right: 0;
+      background-color: white;
+      min-width: 220px;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+      border-radius: 4px;
+      padding: 12px 16px;
+      z-index: 1000;
+      font-size: 14px;
+      color: #333;
+    }
+    .dropdown.show .dropdown-content {
+      display: block;
+    }
+    .dropdown-content h4 {
+      margin-top: 0;
+      margin-bottom: 8px;
+      font-weight: bold;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 4px;
+    }
+    .dropdown-content p {
+      margin: 6px 0;
+      font-family: monospace;
+      background: #f0f0f0;
+      padding: 6px 8px;
+      border-radius: 3px;
+      user-select: text;
+    }
   </style>
 </head>
 <body>
   <div id="chat-container">
     <h2>Public Chat Room</h2>
+
+    <!-- Dropdown menu -->
+    <div class="dropdown" id="dropdown">
+      <button onclick="document.getElementById('dropdown').classList.toggle('show')">Menu ▼</button>
+      <div class="dropdown-content">
+        <h4>Security</h4>
+        <p><code>/deletemessage &lt;number&gt;</code> - Delete last &lt;number&gt; messages</p>
+      </div>
+    </div>
+
     <ul id="messages"></ul>
     <form id="chat-form">
       <input id="message" placeholder="Type your message..." autocomplete="off">
@@ -99,5 +162,4 @@
     });
   </script>
 </body>
-</html>
-""
+</html>""
