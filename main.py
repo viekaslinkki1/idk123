@@ -1,56 +1,69 @@
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
-import uvicorn
 import os
+import sqlite3
+from flask import Flask, render_template
+from flask_socketio import SocketIO, emit
+import eventlet
 
-app = FastAPI()
+eventlet.monkey_patch()
 
-# Serve static frontend files from 'frontend' folder
-app.mount("/static", StaticFiles(directory="frontend"), name="static")
+app = Flask(__name__)
+app.config['SECRET_KEY'] = 'secret'
+socketio = SocketIO(app)
 
-@app.get("/")
-def read_index():
-    return FileResponse("frontend/index.html")
+DB_FILE = 'chat.db'
 
-class ConnectionManager:
-    def __init__(self):
-        self.active_connections: list[WebSocket] = []
+def init_db():
+    with sqlite3.connect(DB_FILE) as conn:
+        c = conn.cursor()
+        c.execute('''CREATE TABLE IF NOT EXISTS messages (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, 
+            username TEXT, 
+            message TEXT
+        )''')
+        conn.commit()
 
-    async def connect(self, websocket: WebSocket):
-        await websocket.accept()
-        self.active_connections.append(websocket)
+@app.route('/')
+def index():
+    with sqlite3.connect(DB_FILE) as conn:
+        c = conn.cursor()
+        # Select id too to track messages for deletion
+        c.execute("SELECT id, username, message FROM messages ORDER BY id DESC LIMIT 50")
+        messages = c.fetchall()[::-1]  # Reverse to show oldest first
+    return render_template('index.html', messages=messages)
 
-    def disconnect(self, websocket: WebSocket):
-        self.active_connections.remove(websocket)
+@socketio.on('send_message')
+def handle_send(data):
+    username = "anom"
+    message = data.get('message')
 
-    async def send_message(self, message: str):
-        for connection in self.active_connections:
-            await connection.send_text(message)
+    with sqlite3.connect(DB_FILE) as conn:
+        c = conn.cursor()
+        c.execute("INSERT INTO messages (username, message) VALUES (?, ?)", (username, message))
+        message_id = c.lastrowid
+        conn.commit()
 
-manager = ConnectionManager()
+    # Send back the inserted message with its DB id
+    emit('receive_message', {'id': message_id, 'username': username, 'message': message}, broadcast=True)
 
-def save_message(message: str):
-    with open("messages.txt", "a", encoding="utf-8") as file:
-        file.write(message + "\n")
+@socketio.on('delete_messages')
+def handle_delete_messages(data):
+    amount = data.get('amount', 0)
+    if not isinstance(amount, int) or amount <= 0:
+        return  # Ignore invalid inputs
 
-@app.websocket("/ws/chat")
-async def websocket_endpoint(websocket: WebSocket):
-    await manager.connect(websocket)
-    try:
-        if os.path.exists("messages.txt"):
-            with open("messages.txt", "r", encoding="utf-8") as file:
-                for line in file:
-                    await websocket.send_text(line.strip())
+    with sqlite3.connect(DB_FILE) as conn:
+        c = conn.cursor()
+        c.execute("SELECT id FROM messages ORDER BY id DESC LIMIT ?", (amount,))
+        rows = c.fetchall()
+        ids_to_delete = [row[0] for row in rows]
 
-        while True:
-            data = await websocket.receive_text()
-            save_message(data)
-            await manager.send_message(data)
+        if ids_to_delete:
+            c.execute(f"DELETE FROM messages WHERE id IN ({','.join(['?']*len(ids_to_delete))})", ids_to_delete)
+            conn.commit()
 
-    except WebSocketDisconnect:
-        manager.disconnect(websocket)
+    # Notify all clients to remove these messages
+    emit('messages_deleted', {'deleted_ids': ids_to_delete}, broadcast=True)
 
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8000))
-    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)
+if __name__ == '__main__':
+    init_db()
+    socketio.run(app, host='0.0.0.0', port=int(os.environ.get('PORT', 10000)))
